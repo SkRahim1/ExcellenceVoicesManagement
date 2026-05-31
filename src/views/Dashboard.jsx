@@ -81,8 +81,8 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="user-badge">
-          <div className="user-avatar">{user?.email[0].toUpperCase()}</div>
-          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user?.role}</span>
+          <div className="user-avatar">{(user?.name || user?.email || 'U')[0].toUpperCase()}</div>
+          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user?.name || user?.role}</span>
         </div>
       </div>
 

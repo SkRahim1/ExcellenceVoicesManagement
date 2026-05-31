@@ -3,37 +3,48 @@ import { useAuth } from '../context/AuthContext';
 import { mockDb } from '../services/mockDb';
 
 const Settings = () => {
-  const { user, hasEditPermission } = useAuth();
+  const { user } = useAuth();
   
   // Settings values
   const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('evm_gas_url') || 'https://script.google.com/macros/s/AKfycbz_EVM_PROX_Deployment_ID/exec');
   const [sheetId, setSheetId] = useState(() => localStorage.getItem('evm_sheet_id') || '1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T_EVM');
   const [alertEmail, setAlertEmail] = useState(() => localStorage.getItem('evm_alert_email') || 'partner1@excellencevoices.com');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
   const [lastBackup, setLastBackup] = useState('2026-05-30 02:00:03 AM');
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handleInputClick = () => {
+    if (isUnlocked) return;
+    const pwd = prompt('Enter security passcode to modify spreadsheet connector configurations:');
+    if (pwd === 'ExcellenceSheetUpdate232') {
+      setIsUnlocked(true);
+      window.dispatchEvent(new CustomEvent('evm_toast', {
+        detail: { type: 'success', message: 'Spreadsheet settings unlocked for editing.' }
+      }));
+    } else if (pwd !== null) {
+      window.dispatchEvent(new CustomEvent('evm_toast', {
+        detail: { type: 'error', message: 'Incorrect passcode. Access Denied.' }
+      }));
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSaved(false);
 
-    if (!hasEditPermission) {
-      setErrorMsg('Unauthorized: Only managers are permitted to modify system configurations.');
-      return;
-    }
-
-    if (confirmPassword !== 'password123') {
-      setErrorMsg('Incorrect Admin Password. Access Denied.');
-      return;
-    }
-
     localStorage.setItem('evm_gas_url', gasUrl);
     localStorage.setItem('evm_sheet_id', sheetId);
     localStorage.setItem('evm_alert_email', alertEmail);
-    setConfirmPassword('');
     setSaved(true);
+    setIsUnlocked(false);
+
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: 'Settings successfully updated and saved.' }
+    }));
     
     // Sync immediately if URL is set
     try {
@@ -47,6 +58,11 @@ const Settings = () => {
   };
 
   const triggerManualBackup = async () => {
+    setIsBackingUp(true);
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'info', message: 'Initiating daily spreadsheet backup...' }
+    }));
+
     if (gasUrl && !gasUrl.includes('EVM_PROX_Deployment_ID')) {
       try {
         const response = await fetch(gasUrl, {
@@ -59,8 +75,11 @@ const Settings = () => {
           const now = new Date();
           const formatted = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
           setLastBackup(formatted);
-          alert('Spreadsheet backup successfully copied to Google Drive /Backups directory.');
+          window.dispatchEvent(new CustomEvent('evm_toast', {
+            detail: { type: 'success', message: 'Spreadsheet backup successfully copied to Google Drive.' }
+          }));
           mockDb.logAction('Backup Triggered', 'Manually initiated daily spreadsheet backup duplicate');
+          setIsBackingUp(false);
           return;
         }
       } catch (err) {
@@ -72,10 +91,63 @@ const Settings = () => {
     const now = new Date();
     const formatted = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
     setLastBackup(formatted);
-    alert('Spreadsheet backup successfully copied to local backups database.');
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: 'Spreadsheet backup successfully copied to local backups database.' }
+    }));
+    setIsBackingUp(false);
+  };
+
+  const downloadLocalCsv = () => {
+    try {
+      const schools = mockDb.getSchools() || [];
+      if (schools.length === 0) {
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'error', message: 'No school data available to export.' }
+        }));
+        return;
+      }
+      
+      const headers = ['school_id', 'school_name', 'principal_name', 'coordinator_name', 'mobile_number', 'email', 'address', 'trainer_id', 'contract_amount', 'advance_for_books', 'recommended_installment', 'remarks', 'status', 'start_date'];
+      const csvRows = [headers.join(',')];
+      
+      for (const school of schools) {
+        const values = headers.map(header => {
+          const val = school[header] === undefined || school[header] === null ? '' : String(school[header]);
+          const escaped = val.replace(/"/g, '""');
+          return `"${escaped}"`;
+        });
+        csvRows.push(values.join(','));
+      }
+      
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "evm_schools_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.dispatchEvent(new CustomEvent('evm_toast', {
+        detail: { type: 'success', message: 'Local CSV export downloaded successfully.' }
+      }));
+    } catch (e) {
+      console.error('Local CSV export failed:', e);
+      window.dispatchEvent(new CustomEvent('evm_toast', {
+        detail: { type: 'error', message: 'Export failed: ' + e.message }
+      }));
+    }
   };
 
   const triggerWeeklyExport = async () => {
+    setIsExporting(true);
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'info', message: 'Compiles and generates spreadsheet export...' }
+    }));
+
+    let exportedRemotely = false;
+    
     if (gasUrl && !gasUrl.includes('EVM_PROX_Deployment_ID')) {
       try {
         const response = await fetch(gasUrl, {
@@ -87,14 +159,22 @@ const Settings = () => {
         if (result.success && result.downloadUrl) {
           window.open(result.downloadUrl, '_blank');
           mockDb.logAction('Excel Export Triggered', 'Manually compiled spreadsheet as .xlsx download');
-          return;
+          window.dispatchEvent(new CustomEvent('evm_toast', {
+            detail: { type: 'success', message: 'Google Spreadsheet exported successfully.' }
+          }));
+          exportedRemotely = true;
         }
       } catch (err) {
         console.error('Remote Excel export trigger failed:', err);
       }
     }
     
-    mockDb.logAction('Excel Export Triggered', 'Manually compiled spreadsheet as .xlsx download (Local)');
+    if (!exportedRemotely) {
+      downloadLocalCsv();
+      mockDb.logAction('Local Export Triggered', 'Manually compiled spreadsheet as local CSV download');
+    }
+    
+    setIsExporting(false);
   };
 
   return (
@@ -135,7 +215,10 @@ const Settings = () => {
                 className="form-input" 
                 value={gasUrl} 
                 onChange={(e) => setGasUrl(e.target.value)} 
-                disabled={!hasEditPermission}
+                onClick={handleInputClick}
+                readOnly={!isUnlocked}
+                style={{ cursor: isUnlocked ? 'text' : 'pointer' }}
+                placeholder={isUnlocked ? "Enter deployment URL" : "Click to enter passcode and modify..."}
                 required 
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -150,7 +233,10 @@ const Settings = () => {
                 className="form-input" 
                 value={sheetId} 
                 onChange={(e) => setSheetId(e.target.value)} 
-                disabled={!hasEditPermission}
+                onClick={handleInputClick}
+                readOnly={!isUnlocked}
+                style={{ cursor: isUnlocked ? 'text' : 'pointer' }}
+                placeholder={isUnlocked ? "Enter spreadsheet ID" : "Click to enter passcode and modify..."}
                 required 
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -165,36 +251,18 @@ const Settings = () => {
                 className="form-input" 
                 value={alertEmail} 
                 onChange={(e) => setAlertEmail(e.target.value)} 
-                disabled={!hasEditPermission}
+                placeholder="Enter alert notification email address"
                 required 
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Recipient email for change alerts routed through Google Apps Script.
+                Recipient email for change alerts routed through Google Apps Script. (Always editable by anyone)
               </p>
             </div>
-
-            {hasEditPermission && (
-              <div className="form-group">
-                <label className="form-label">Confirm Authorization Password</label>
-                <input 
-                  type="password" 
-                  className="form-input" 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
-                  placeholder="Enter administrator passcode to authorize changes"
-                  required 
-                />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Please type the administrative password (<code style={{ color: 'var(--color-cyan)' }}>password123</code>) to unlock saving.
-                </p>
-              </div>
-            )}
 
             <button 
               type="submit" 
               className="btn btn-primary" 
               style={{ width: '140px', marginTop: '0.5rem' }}
-              disabled={!hasEditPermission}
             >
               Save Settings
             </button>
@@ -211,7 +279,9 @@ const Settings = () => {
             <div style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ fontWeight: 600 }}>Daily Backup Snapshots</span>
-                <button onClick={triggerManualBackup} className="btn btn-secondary btn-small">Backup Now</button>
+                <button onClick={triggerManualBackup} className="btn btn-secondary btn-small" disabled={isBackingUp}>
+                  {isBackingUp ? 'Backing up...' : 'Backup Now'}
+                </button>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Time-driven daily snapshots are scheduled for 02:00 AM.
@@ -224,18 +294,20 @@ const Settings = () => {
             <div style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ fontWeight: 600 }}>Weekly Excel Workbook Export</span>
-                <button onClick={triggerWeeklyExport} className="btn btn-secondary btn-small">Export XLSX</button>
+                <button onClick={triggerWeeklyExport} className="btn btn-secondary btn-small" disabled={isExporting}>
+                  {isExporting ? 'Exporting...' : 'Export XLSX'}
+                </button>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Compiles all 8 database sheets as an Excel workbook binary.
               </p>
             </div>
 
-
-
             <div>
               <span style={{ fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Account Details</span>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.5rem', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Name:</span>
+                <span>{user?.name || 'System User'}</span>
                 <span style={{ color: 'var(--text-muted)' }}>Email:</span>
                 <span>{user?.email}</span>
                 <span style={{ color: 'var(--text-muted)' }}>Access Role:</span>

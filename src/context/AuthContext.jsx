@@ -15,6 +15,15 @@ const ROLE_MAP = {
   'rahim@excellencevoicesvoices.in': 'Partner 3'
 };
 
+const NAME_MAP = {
+  'partner1@excellencevoices.com': 'Partner 1',
+  'manager@excellencevoices.com': 'Raviteja',
+  'raviteja@excellencevoices.in': 'Raviteja',
+  'rana@excellencevoice.in': 'Rana',
+  'rahim@excellencevoices.in': 'Rahim',
+  'rahim@excellencevoicesvoices.in': 'Rahim'
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,11 +36,14 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         // Assign the role based on email, defaulting to read-only if not in the map
-        const role = ROLE_MAP[firebaseUser.email.toLowerCase()] || 'Read-Only Partner';
+        const emailKey = firebaseUser.email.toLowerCase();
+        const role = ROLE_MAP[emailKey] || 'Read-Only Partner';
+        const name = NAME_MAP[emailKey] || firebaseUser.email.split('@')[0];
         
         const sessionData = {
           email: firebaseUser.email,
           role: role,
+          name: name,
           uid: firebaseUser.uid
         };
         
