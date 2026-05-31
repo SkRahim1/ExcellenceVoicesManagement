@@ -111,13 +111,13 @@ To keep all team members aligned, the portal includes a **Collaborative Notifica
 The settings panel controls database replication and security configurations.
 
 ### Security Access Lock & Passcode Verification
-* **Restricted Fields**: Only **Managers** and **Partner 1** are authorized to access and modify system connectors (Google Apps Script URL, Spreadsheet ID, Alert Email). For other read-only roles (Partners 2 & 3), these settings inputs are completely read-only and locked.
-* **Passcode Verification**: To save modifications to the system configurations, authorized administrators must enter the system passcode (**`password123`**) in the *Confirm Authorization Password* field. Saving is blocked if the passcode is incorrect.
+* **Passcode Verification**: The Google Sheets URL and Spreadsheet ID are locked by default to prevent accidental edits. Any partner can click on either input field to prompt for the security passcode (**`ExcellenceSheetUpdate232`**). Upon entering the correct passcode, both fields unlock and can be modified.
+* **Unrestricted Fields**: The **Alert Notification Recipient Email** field is fully unlocked and can be edited by any partner at any time without restrictions or passcode requirements.
 
 ### Spreadsheet Sync Setup
-* **Google Apps Script Web App URL**: Your database backend endpoint connector URL.
-* **Spreadsheet ID**: The target spreadsheet containing the 8 database tabs.
-* **Alert Notification Recipient Email**: The email address where automated system change alerts will be sent.
+* **Google Apps Script Web App URL**: Your database backend endpoint connector URL. (Passcode protected)
+* **Spreadsheet ID**: The target spreadsheet containing the 8 database tabs. (Passcode protected)
+* **Alert Notification Recipient Email**: The email address where automated system change alerts will be sent. (Always editable by anyone)
 
 ### Automated Daily Backup
 * Every day at **02:00 AM**, a copy of your Google Sheet database is created and saved to your Google Drive backup folder. The script automatically rotates snapshots, keeping the last 30 daily backups.
