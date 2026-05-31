@@ -59,6 +59,10 @@ const Trainers = () => {
       status
     });
 
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `Trainer "${trainerName}" registered successfully.` }
+    }));
+
     // Reset Form
     setTrainerName('');
     setMobile('');
@@ -81,6 +85,10 @@ const Trainers = () => {
       payment_date: payDate,
       remarks: payRemarks
     });
+
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `Logged payout of $${payAmount} for trainer "${selectedTrainer.trainer_name}".` }
+    }));
 
     // Reset Form
     setPayMonth('');

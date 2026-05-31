@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { logout, user } = useAuth();
@@ -22,8 +23,11 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar Navigation Panel */}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <div className="logo-section" style={{ marginBottom: 0 }}>
-            EVM<span>.</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="logo-section" style={{ marginBottom: 0 }}>
+              EVM<span>.</span>
+            </div>
+            <NotificationBell />
           </div>
           <button className="mobile-close-btn" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

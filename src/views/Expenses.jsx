@@ -55,6 +55,10 @@ const Expenses = () => {
       remarks
     });
 
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `Expense of $${amount} under "${category}" recorded successfully.` }
+    }));
+
     // Reset Form
     setCategory('Books');
     setAmount('');

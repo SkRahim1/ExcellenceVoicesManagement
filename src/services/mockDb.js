@@ -107,6 +107,12 @@ const syncPost = async (action, sheet, data, idKey = null, idValue = null) => {
     }
     body.userId = getActiveUserEmail();
     
+    // Read user-defined alert notification email from Settings
+    const alertEmail = localStorage.getItem('evm_alert_email');
+    if (alertEmail) {
+      body.alertEmail = alertEmail;
+    }
+    
     await fetch(gasUrl, {
       method: 'POST',
       headers: {
@@ -125,19 +131,41 @@ export const mockDb = {
     const gasUrl = localStorage.getItem('evm_gas_url');
     if (!gasUrl || gasUrl.includes('EVM_PROX_Deployment_ID')) {
       console.log('Google Sheets sync not configured. Operating in local-only storage mode.');
-      return false;
+      return { success: false, error: 'Not Configured' };
     }
     try {
       const response = await fetch(`${gasUrl}?action=readAll`);
       const result = await response.json();
       if (result.success && result.data) {
+        // Load current logs map before overwriting to find new entries
+        const oldDb = getDb();
+        const oldLogsMap = {};
+        if (oldDb && oldDb.logs) {
+          oldDb.logs.forEach(l => { oldLogsMap[l.log_id] = true; });
+        }
+
+        // Cache the latest synced payload
         localStorage.setItem('evm_db', JSON.stringify(result.data));
-        return true;
+
+        // Find if there are new activity logs registered by other users
+        const activeUser = getActiveUserEmail();
+        let newLogs = [];
+        if (result.data.logs) {
+          newLogs = result.data.logs.filter(l => !oldLogsMap[l.log_id] && l.user.toLowerCase() !== activeUser.toLowerCase());
+        }
+
+        // Raise a window event for the notification UI components and Toasts to consume
+        if (newLogs.length > 0) {
+          const event = new CustomEvent('evm_new_logs', { detail: { newLogs } });
+          window.dispatchEvent(event);
+        }
+
+        return { success: true, newLogsCount: newLogs.length, newLogs };
       }
-      return false;
+      return { success: false, error: 'Sync failed on server' };
     } catch (e) {
       console.error('Failed to sync data from Google Sheets API:', e);
-      return false;
+      return { success: false, error: e.toString() };
     }
   },
 

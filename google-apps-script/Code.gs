@@ -80,6 +80,12 @@ function doPost(e) {
       if (!sheet) throw new Error("Sheet not found: " + sheetName);
       
       const newRecord = addRowToSheet(sheet, postData.data);
+      
+      // Send email alert if log is added and alertEmail is specified
+      if (sheetName === "logs" && postData.alertEmail) {
+        sendEmailNotification(postData.alertEmail, postData.data);
+      }
+      
       return handleResponse({ success: true, data: newRecord });
     }
     
@@ -369,4 +375,28 @@ function runWeeklyExcelExport() {
   }
   
   throw new Error("Weekly export failed. HTTP response code: " + response.getResponseCode());
+}
+
+/**
+ * Send automated email alert for a log entry
+ */
+function sendEmailNotification(recipientEmail, logData) {
+  try {
+    const subject = "[EVM Alert] System Change: " + logData.action;
+    const body = "Hello,\n\n" +
+                 "An update was logged in the Excellence Voices Management (EVM) system:\n\n" +
+                 "--------------------------------------------------\n" +
+                 "Action: " + logData.action + "\n" +
+                 "User: " + logData.user + "\n" +
+                 "Date/Time: " + logData.date + " " + logData.time + "\n" +
+                 "Description: " + logData.description + "\n" +
+                 "--------------------------------------------------\n\n" +
+                 "Please review the changes in your EVM dashboard.\n\n" +
+                 "Best regards,\n" +
+                 "EVM Portal Automated System";
+                 
+    MailApp.sendEmail(recipientEmail, subject, body);
+  } catch (error) {
+    Logger.log("Failed to send email alert: " + error.toString());
+  }
 }

@@ -117,6 +117,10 @@ const Schools = () => {
       start_date: startDate
     });
 
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `School "${schoolName}" registered successfully.` }
+    }));
+
     // Reset Form
     setSchoolName('');
     setPrincipalName('');
@@ -174,6 +178,10 @@ const Schools = () => {
       status: editStatus
     });
 
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `School "${editName}" updated successfully.` }
+    }));
+
     setShowEditForm(false);
     setSelectedSchool(updated);
     loadData();
@@ -191,6 +199,10 @@ const Schools = () => {
       payment_date: payDate,
       remarks: payRemarks
     });
+
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `Logged payment of $${payAmount} for "${selectedSchool.school_name}".` }
+    }));
 
     // Reset Form
     setPayMonth('');
@@ -228,6 +240,10 @@ const Schools = () => {
       payment_date: editPayDate,
       remarks: editPayRemarks
     });
+
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `Updated payment for "${selectedSchool.school_name}".` }
+    }));
 
     setEditingPayment(null);
     setEditPayMonth('');

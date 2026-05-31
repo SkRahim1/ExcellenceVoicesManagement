@@ -48,6 +48,21 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+
+    // Start background sync polling every 30 seconds to fetch partner updates
+    const interval = setInterval(async () => {
+      try {
+        await mockDb.syncData();
+      } catch (err) {
+        console.error('Background sync polling failed:', err);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const login = async (email, password) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);

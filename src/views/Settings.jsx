@@ -3,18 +3,36 @@ import { useAuth } from '../context/AuthContext';
 import { mockDb } from '../services/mockDb';
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, hasEditPermission } = useAuth();
   
   // Settings values
   const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('evm_gas_url') || 'https://script.google.com/macros/s/AKfycbz_EVM_PROX_Deployment_ID/exec');
   const [sheetId, setSheetId] = useState(() => localStorage.getItem('evm_sheet_id') || '1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T_EVM');
+  const [alertEmail, setAlertEmail] = useState(() => localStorage.getItem('evm_alert_email') || 'partner1@excellencevoices.com');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [lastBackup, setLastBackup] = useState('2026-05-30 02:00:03 AM');
   const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
+    setSaved(false);
+
+    if (!hasEditPermission) {
+      setErrorMsg('Unauthorized: Only managers are permitted to modify system configurations.');
+      return;
+    }
+
+    if (confirmPassword !== 'password123') {
+      setErrorMsg('Incorrect Admin Password. Access Denied.');
+      return;
+    }
+
     localStorage.setItem('evm_gas_url', gasUrl);
     localStorage.setItem('evm_sheet_id', sheetId);
+    localStorage.setItem('evm_alert_email', alertEmail);
+    setConfirmPassword('');
     setSaved(true);
     
     // Sync immediately if URL is set
@@ -98,8 +116,14 @@ const Settings = () => {
           </h3>
 
           {saved && (
-            <div className="alert-box" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1.5rem' }}>
+            <div className="alert-box" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1.5rem', padding: '0.75rem 1rem', borderRadius: '6px' }}>
               <span className="alert-message" style={{ color: 'var(--color-green)' }}>Settings successfully updated and saved.</span>
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="alert-box" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '1.5rem', padding: '0.75rem 1rem', borderRadius: '6px' }}>
+              <span className="alert-message" style={{ color: 'var(--color-pink)' }}>{errorMsg}</span>
             </div>
           )}
 
@@ -111,6 +135,7 @@ const Settings = () => {
                 className="form-input" 
                 value={gasUrl} 
                 onChange={(e) => setGasUrl(e.target.value)} 
+                disabled={!hasEditPermission}
                 required 
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -125,6 +150,7 @@ const Settings = () => {
                 className="form-input" 
                 value={sheetId} 
                 onChange={(e) => setSheetId(e.target.value)} 
+                disabled={!hasEditPermission}
                 required 
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -132,7 +158,44 @@ const Settings = () => {
               </p>
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '120px', marginTop: '0.5rem' }}>
+            <div className="form-group">
+              <label className="form-label">Alert Notification Recipient Email</label>
+              <input 
+                type="email" 
+                className="form-input" 
+                value={alertEmail} 
+                onChange={(e) => setAlertEmail(e.target.value)} 
+                disabled={!hasEditPermission}
+                required 
+              />
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Recipient email for change alerts routed through Google Apps Script.
+              </p>
+            </div>
+
+            {hasEditPermission && (
+              <div className="form-group">
+                <label className="form-label">Confirm Authorization Password</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  placeholder="Enter administrator passcode to authorize changes"
+                  required 
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  Please type the administrative password (<code style={{ color: 'var(--color-cyan)' }}>password123</code>) to unlock saving.
+                </p>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ width: '140px', marginTop: '0.5rem' }}
+              disabled={!hasEditPermission}
+            >
               Save Settings
             </button>
           </form>

@@ -43,6 +43,10 @@ const Capital = () => {
       remarks
     });
 
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: `Recorded capital contribution of $${amount} from partner "${partnerName}".` }
+    }));
+
     // Reset Form
     setPartnerName('');
     setAmount('');
