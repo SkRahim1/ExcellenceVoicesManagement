@@ -17,24 +17,7 @@ const SEED_SCHOOLS_LIST = [
 ];
 
 const SEED_DATA = {
-  schools: SEED_SCHOOLS_LIST.map((name, index) => ({
-    school_id: `sch_${index + 1}`,
-    school_name: name,
-    principal_name: 'Principal Name',
-    coordinator_name: '',
-    mobile_number: '0000000000',
-    email: `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}@school.com`,
-    address: 'Address Details',
-    trainer_id: '',
-    contract_amount: 0,
-    advance_for_books: 0,
-    recommended_installment: 0,
-    remarks: 'Initial registration.',
-    status: 'Active',
-    start_date: new Date().toISOString().split('T')[0],
-    created_date: new Date().toISOString(),
-    updated_date: new Date().toISOString()
-  })),
+  schools: [],
   payments: [],
   trainers: [],
   trainerPayments: [],
@@ -47,7 +30,7 @@ const SEED_DATA = {
       time: new Date().toTimeString().split(' ')[0],
       user: 'System',
       action: 'Database Initialized',
-      description: 'Cleared seed data and initialized database with 15 standard schools.'
+      description: 'Cleared seed data and initialized database with empty profile registry.'
     }
   ]
 };
@@ -61,8 +44,11 @@ const getDb = () => {
   }
   try {
     const db = JSON.parse(data);
-    // Auto-migrate: If local storage contains old mock schools, reinitialize with the correct 15 schools
-    if (db.schools && db.schools.some(s => s.school_name === 'Green Valley School')) {
+    // If the database contains any of the default seed schools or mock schools, wipe them and reset to start empty
+    const containsSeedSchools = db.schools && db.schools.some(s => 
+      SEED_SCHOOLS_LIST.includes(s.school_name) || s.school_name === 'Green Valley School'
+    );
+    if (containsSeedSchools) {
       localStorage.setItem('evm_db', JSON.stringify(SEED_DATA));
       return SEED_DATA;
     }
