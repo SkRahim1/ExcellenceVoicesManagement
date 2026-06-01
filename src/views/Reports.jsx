@@ -12,13 +12,20 @@ const Reports = () => {
   const [expenses, setExpenses] = useState([]);
   const [contributions, setContributions] = useState([]);
 
-  useEffect(() => {
+  const loadData = () => {
     setSchools(mockDb.getSchools());
     setPayments(mockDb.getPayments());
     setTrainers(mockDb.getTrainers());
     setTrainerPayments(mockDb.getTrainerPayments());
     setExpenses(mockDb.getExpenses());
     setContributions(mockDb.getContributions());
+  };
+
+  useEffect(() => {
+    loadData();
+
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
   }, []);
 
   const formatCurrency = (val) => {

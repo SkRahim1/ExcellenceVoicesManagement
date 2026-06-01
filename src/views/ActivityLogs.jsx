@@ -4,8 +4,15 @@ import { mockDb } from '../services/mockDb';
 const ActivityLogs = () => {
   const [logs, setLogs] = useState([]);
 
-  useEffect(() => {
+  const loadData = () => {
     setLogs(mockDb.getLogs());
+  };
+
+  useEffect(() => {
+    loadData();
+
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
   }, []);
 
   return (

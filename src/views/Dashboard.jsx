@@ -14,8 +14,7 @@ const Dashboard = () => {
   const [contributions, setContributions] = useState([]);
   const [logs, setLogs] = useState([]);
 
-  // Fetch all data
-  useEffect(() => {
+  const loadDashboardData = () => {
     setSchools(mockDb.getSchools());
     setPayments(mockDb.getPayments());
     setTrainers(mockDb.getTrainers());
@@ -23,6 +22,14 @@ const Dashboard = () => {
     setExpenses(mockDb.getExpenses());
     setContributions(mockDb.getContributions());
     setLogs(mockDb.getLogs());
+  };
+
+  // Fetch all data
+  useEffect(() => {
+    loadDashboardData();
+
+    window.addEventListener('evm_db_updated', loadDashboardData);
+    return () => window.removeEventListener('evm_db_updated', loadDashboardData);
   }, []);
 
   // Formatter for currency

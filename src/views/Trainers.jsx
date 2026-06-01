@@ -30,12 +30,22 @@ const Trainers = () => {
   const [payRemarks, setPayRemarks] = useState('');
 
   const loadData = () => {
-    setTrainers(mockDb.getTrainers());
+    const updatedTrainers = mockDb.getTrainers();
+    setTrainers(updatedTrainers);
     setPayouts(mockDb.getTrainerPayments());
+    
+    // Also refresh selectedTrainer reactively if one is active to update payout logs
+    setSelectedTrainer(prevSelected => {
+      if (!prevSelected) return null;
+      return updatedTrainers.find(t => t.trainer_id === prevSelected.trainer_id) || null;
+    });
   };
 
   useEffect(() => {
     loadData();
+
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
   }, []);
 
   const formatCurrency = (val) => {

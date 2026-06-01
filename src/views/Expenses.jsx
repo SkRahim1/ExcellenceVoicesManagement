@@ -21,6 +21,9 @@ const Expenses = () => {
 
   useEffect(() => {
     loadData();
+
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
   }, []);
 
   const formatCurrency = (val) => {

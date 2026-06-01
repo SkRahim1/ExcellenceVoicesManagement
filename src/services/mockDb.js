@@ -147,6 +147,9 @@ export const mockDb = {
         // Cache the latest synced payload
         localStorage.setItem('evm_db', JSON.stringify(result.data));
 
+        // Dispatch general DB update event for active views to reload
+        window.dispatchEvent(new Event('evm_db_updated'));
+
         // Find if there are new activity logs registered by other users
         const activeUser = getActiveUserEmail();
         let newLogs = [];

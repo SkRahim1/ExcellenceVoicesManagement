@@ -63,13 +63,23 @@ const Schools = () => {
 
   // Fetch all tables
   const loadData = () => {
-    setSchools(mockDb.getSchools());
+    const updatedSchools = mockDb.getSchools();
+    setSchools(updatedSchools);
     setPayments(mockDb.getPayments());
     setTrainers(mockDb.getTrainers());
+    
+    // Also refresh selectedSchool reactively if one is active to update outstanding/payments views
+    setSelectedSchool(prevSelected => {
+      if (!prevSelected) return null;
+      return updatedSchools.find(s => s.school_id === prevSelected.school_id) || null;
+    });
   };
 
   useEffect(() => {
     loadData();
+
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
   }, []);
 
   const formatCurrency = (val) => {
