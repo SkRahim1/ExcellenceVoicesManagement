@@ -44,13 +44,25 @@ const getDb = () => {
   }
   try {
     const db = JSON.parse(data);
-    // If the database contains any of the default seed schools or mock schools, wipe them and reset to start empty
-    const containsSeedSchools = db.schools && db.schools.some(s => 
+    // If the database contains any default seed schools or mock schools, filter them out to preserve user's manually added schools!
+    const hasSeedSchools = db.schools && db.schools.some(s => 
       SEED_SCHOOLS_LIST.includes(s.school_name) || s.school_name === 'Green Valley School'
     );
-    if (containsSeedSchools) {
-      localStorage.setItem('evm_db', JSON.stringify(SEED_DATA));
-      return SEED_DATA;
+    if (hasSeedSchools) {
+      // Keep only schools that are NOT default seed schools or mock schools
+      const manuallyAddedSchools = db.schools.filter(s => 
+        !SEED_SCHOOLS_LIST.includes(s.school_name) && s.school_name !== 'Green Valley School'
+      );
+      
+      const manuallyAddedSchoolIds = new Set(manuallyAddedSchools.map(s => s.school_id));
+      
+      // Clean payments associated with deleted seed schools, preserving others
+      const remainingPayments = (db.payments || []).filter(p => manuallyAddedSchoolIds.has(p.school_id));
+      
+      db.schools = manuallyAddedSchools;
+      db.payments = remainingPayments;
+      
+      localStorage.setItem('evm_db', JSON.stringify(db));
     }
     return db;
   } catch (e) {
