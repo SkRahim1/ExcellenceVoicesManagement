@@ -11,6 +11,7 @@ const Settings = () => {
   const [alertEmail, setAlertEmail] = useState(() => localStorage.getItem('evm_alert_email') || 'partner1@excellencevoices.com');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [lastBackup, setLastBackup] = useState('2026-05-30 02:00:03 AM');
   const [saved, setSaved] = useState(false);
@@ -138,6 +139,57 @@ const Settings = () => {
         detail: { type: 'error', message: 'Export failed: ' + e.message }
       }));
     }
+  };
+
+  const handleResetAllData = async () => {
+    const pwd = prompt('⚠️ DANGER ZONE\n\nEnter the master reset password to permanently delete ALL system data:');
+    if (pwd === null) return;
+    if (pwd !== 'ExcellenceReset@2024') {
+      window.dispatchEvent(new CustomEvent('evm_toast', {
+        detail: { type: 'error', message: 'Incorrect password. Reset cancelled.' }
+      }));
+      return;
+    }
+
+    const confirmed = window.confirm('⚠️ FINAL WARNING\n\nThis will permanently delete ALL schools, payments, trainers, expenses and logs from Google Sheets and this device.\n\nThis CANNOT be undone. Proceed?');
+    if (!confirmed) return;
+
+    setIsResetting(true);
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'info', message: 'Resetting all data... please wait.' }
+    }));
+
+    const currentGasUrl = localStorage.getItem('evm_gas_url');
+    if (currentGasUrl && !currentGasUrl.includes('EVM_PROX_Deployment_ID')) {
+      try {
+        const response = await fetch(currentGasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'clearAllData' })
+        });
+        const result = await response.json();
+        if (result.success) {
+          localStorage.removeItem('evm_db');
+          window.dispatchEvent(new CustomEvent('evm_db_updated'));
+          mockDb.logAction('Data Reset', 'All system data permanently deleted by admin');
+          window.dispatchEvent(new CustomEvent('evm_toast', {
+            detail: { type: 'success', message: 'All data permanently deleted from Google Sheets and this device.' }
+          }));
+          setIsResetting(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Remote reset failed:', err);
+      }
+    }
+
+    // Fallback: clear local data only
+    localStorage.removeItem('evm_db');
+    window.dispatchEvent(new CustomEvent('evm_db_updated'));
+    window.dispatchEvent(new CustomEvent('evm_toast', {
+      detail: { type: 'success', message: 'Local data cleared. Clear Google Sheets rows manually too.' }
+    }));
+    setIsResetting(false);
   };
 
   const triggerWeeklyExport = async () => {
@@ -315,6 +367,46 @@ const Settings = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="glass-panel" style={{ borderColor: 'rgba(244, 63, 94, 0.3)', gridColumn: '1 / -1', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--color-pink)' }}>
+          ⚠️ Danger Zone
+        </h3>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+          Irreversible destructive operations. These actions cannot be undone.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', backgroundColor: 'rgba(244, 63, 94, 0.05)', border: '1px solid rgba(244, 63, 94, 0.15)', borderRadius: '10px' }}>
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>Reset All System Data</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Permanently deletes all schools, payments, trainers, expenses and logs from Google Sheets and all devices.
+            </div>
+          </div>
+          <button
+            id="reset-all-data-btn"
+            onClick={handleResetAllData}
+            disabled={isResetting}
+            style={{
+              background: 'rgba(244, 63, 94, 0.1)',
+              border: '1px solid rgba(244, 63, 94, 0.4)',
+              color: 'var(--color-pink)',
+              padding: '0.65rem 1.25rem',
+              borderRadius: '8px',
+              cursor: isResetting ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              whiteSpace: 'nowrap',
+              marginLeft: '1.5rem',
+              opacity: isResetting ? 0.6 : 1,
+              transition: 'all 0.2s ease',
+              flexShrink: 0
+            }}
+          >
+            {isResetting ? '⏳ Resetting...' : '🗑️ Reset All Data'}
+          </button>
         </div>
       </div>
     </>

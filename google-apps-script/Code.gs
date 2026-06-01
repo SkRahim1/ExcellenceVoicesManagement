@@ -120,6 +120,11 @@ function doPost(e) {
       return handleResponse({ success: true, message: "Backup successfully triggered." });
     }
     
+    if (action === "clearAllData") {
+      clearAllSheetData();
+      return handleResponse({ success: true, message: "All data cleared successfully." });
+    }
+    
     if (action === "manualExport") {
       const downloadUrl = runWeeklyExcelExport();
       return handleResponse({ success: true, downloadUrl: downloadUrl, message: "Export successfully triggered." });
@@ -299,6 +304,22 @@ function initializeHeaders(sheet, name) {
     }
     sheet.appendRow(sheetHeaders);
   }
+}
+
+/**
+ * Clear all data rows from every sheet (keeps header row 1 intact).
+ */
+function clearAllSheetData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  SHEET_NAMES.forEach(function(sheetName) {
+    const sheet = ss.getSheetByName(sheetName);
+    if (sheet) {
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.deleteRows(2, lastRow - 1);
+      }
+    }
+  });
 }
 
 /**
