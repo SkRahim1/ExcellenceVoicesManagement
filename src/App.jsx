@@ -79,7 +79,7 @@ const ProtectedRoute = ({ children }) => {
       <Sidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       
       {/* Mobile top header bar */}
-      <header className="mobile-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1rem' }}>
+      <header className="mobile-header" style={{ justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button onClick={() => setMobileOpen(true)} className="mobile-menu-btn">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
