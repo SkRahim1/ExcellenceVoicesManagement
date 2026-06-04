@@ -111,37 +111,69 @@ const Capital = () => {
       {!showAddForm && (
         <div className="glass-panel">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Capital Ledger</h3>
-          
-          <div className="table-container">
-            {contributions.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1.5rem 0' }}>No partner contributions logged.</p>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Partner</th>
-                    <th>Amount</th>
-                    <th>Remarks</th>
-                    <th>Logged By</th>
-                  </tr>
-                </thead>
-                <tbody>
+
+          {contributions.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1.5rem 0' }}>No partner contributions logged.</p>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="desktop-only">
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th><th>Partner</th><th>Amount</th><th>Remarks</th><th>Logged By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contributions.map(con => (
+                        <tr key={con.contribution_id}>
+                          <td>{con.date}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--color-orange)' }}>{con.partner_name}</td>
+                          <td style={{ fontWeight: 600 }}>{formatCurrency(con.amount)}</td>
+                          <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{con.remarks}</td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{con.added_by}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="mobile-only">
+                <div className="mobile-card-list">
                   {contributions.map(con => (
-                    <tr key={con.contribution_id}>
-                      <td data-label="Date">{con.date}</td>
-                      <td data-label="Partner" style={{ fontWeight: 600, color: 'var(--color-orange)' }}>{con.partner_name}</td>
-                      <td data-label="Amount" style={{ fontWeight: 600 }}>{formatCurrency(con.amount)}</td>
-                      <td data-label="Remarks" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{con.remarks}</td>
-                      <td data-label="Logged By" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{con.added_by}</td>
-                    </tr>
+                    <div className="mobile-card" key={con.contribution_id}>
+                      <div className="mobile-card-header">
+                        <span className="mobile-card-title" style={{ color: 'var(--color-orange)' }}>{con.partner_name}</span>
+                        <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-orange)' }}>{formatCurrency(con.amount)}</span>
+                      </div>
+                      <div className="mobile-card-grid">
+                        <div className="mobile-card-item">
+                          <span className="mobile-card-label">Date</span>
+                          <span className="mobile-card-value">{con.date}</span>
+                        </div>
+                        <div className="mobile-card-item">
+                          <span className="mobile-card-label">Logged By</span>
+                          <span className="mobile-card-value">{con.added_by}</span>
+                        </div>
+                        {con.remarks && (
+                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
+                            <span className="mobile-card-label">Remarks</span>
+                            <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{con.remarks}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
+
     </>
   );
 };

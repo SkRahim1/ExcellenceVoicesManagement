@@ -127,37 +127,69 @@ const Expenses = () => {
       {!showAddForm && (
         <div className="glass-panel">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Operational Outlays List</h3>
-          
-          <div className="table-container">
-            {expenses.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1.5rem 0' }}>No business expenses recorded.</p>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Remarks</th>
-                    <th>Logged By</th>
-                  </tr>
-                </thead>
-                <tbody>
+
+          {expenses.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1.5rem 0' }}>No business expenses recorded.</p>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="desktop-only">
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th><th>Category</th><th>Amount</th><th>Remarks</th><th>Logged By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {expenses.map(exp => (
+                        <tr key={exp.expense_id}>
+                          <td>{exp.date}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--color-pink)' }}>{exp.category}</td>
+                          <td style={{ fontWeight: 600 }}>{formatCurrency(exp.amount)}</td>
+                          <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{exp.remarks}</td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{exp.added_by}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="mobile-only">
+                <div className="mobile-card-list">
                   {expenses.map(exp => (
-                    <tr key={exp.expense_id}>
-                      <td data-label="Date">{exp.date}</td>
-                      <td data-label="Category" style={{ fontWeight: 600, color: 'var(--color-pink)' }}>{exp.category}</td>
-                      <td data-label="Amount" style={{ fontWeight: 600 }}>{formatCurrency(exp.amount)}</td>
-                      <td data-label="Remarks" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{exp.remarks}</td>
-                      <td data-label="Logged By" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{exp.added_by}</td>
-                    </tr>
+                    <div className="mobile-card" key={exp.expense_id}>
+                      <div className="mobile-card-header">
+                        <span className="mobile-card-title" style={{ color: 'var(--color-pink)' }}>{exp.category}</span>
+                        <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{formatCurrency(exp.amount)}</span>
+                      </div>
+                      <div className="mobile-card-grid">
+                        <div className="mobile-card-item">
+                          <span className="mobile-card-label">Date</span>
+                          <span className="mobile-card-value">{exp.date}</span>
+                        </div>
+                        <div className="mobile-card-item">
+                          <span className="mobile-card-label">Logged By</span>
+                          <span className="mobile-card-value">{exp.added_by}</span>
+                        </div>
+                        {exp.remarks && (
+                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
+                            <span className="mobile-card-label">Remarks</span>
+                            <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{exp.remarks}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
+
     </>
   );
 };
