@@ -6,8 +6,11 @@ const Settings = () => {
   const { user } = useAuth();
   
   // Settings values
-  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('evm_gas_url') || 'https://script.google.com/macros/s/AKfycbz_EVM_PROX_Deployment_ID/exec');
-  const [sheetId, setSheetId] = useState(() => localStorage.getItem('evm_sheet_id') || '1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T_EVM');
+  const DEFAULT_GAS_URL = import.meta.env.VITE_GAS_URL || 'https://script.google.com/macros/s/AKfycbzilQgn7d-b-AJIqCLw2UZpjwUxd4OLg72K-FWAUz84eugqtup8T5bvbObocMu9S3vq/exec';
+  const DEFAULT_SHEET_ID = import.meta.env.VITE_SHEET_ID || '1jAR0JQr8lnKc_UjaaiM-Oc_JBxF6H0JQsZXWQMMI75M';
+
+  const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('evm_gas_url') || DEFAULT_GAS_URL);
+  const [sheetId, setSheetId] = useState(() => localStorage.getItem('evm_sheet_id') || DEFAULT_SHEET_ID);
   const [alertEmail, setAlertEmail] = useState(() => localStorage.getItem('evm_alert_email') || 'partner1@excellencevoices.com');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -159,7 +162,7 @@ const Settings = () => {
       detail: { type: 'info', message: 'Resetting all data... please wait.' }
     }));
 
-    const currentGasUrl = localStorage.getItem('evm_gas_url');
+    const currentGasUrl = localStorage.getItem('evm_gas_url') || DEFAULT_GAS_URL;
     if (currentGasUrl && !currentGasUrl.includes('EVM_PROX_Deployment_ID')) {
       try {
         const response = await fetch(currentGasUrl, {

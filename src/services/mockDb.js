@@ -88,9 +88,15 @@ const getActiveUserEmail = () => {
   return 'System';
 };
 
+const DEFAULT_GAS_URL = import.meta.env.VITE_GAS_URL || 'https://script.google.com/macros/s/AKfycbzilQgn7d-b-AJIqCLw2UZpjwUxd4OLg72K-FWAUz84eugqtup8T5bvbObocMu9S3vq/exec';
+
+const getGasUrl = () => {
+  return localStorage.getItem('evm_gas_url') || DEFAULT_GAS_URL;
+};
+
 // background worker to POST row updates to Apps Script proxy
 const syncPost = async (action, sheet, data, idKey = null, idValue = null) => {
-  const gasUrl = localStorage.getItem('evm_gas_url');
+  const gasUrl = getGasUrl();
   if (!gasUrl || gasUrl.includes('EVM_PROX_Deployment_ID')) return;
   
   try {
@@ -126,7 +132,7 @@ const syncPost = async (action, sheet, data, idKey = null, idValue = null) => {
 export const mockDb = {
   // Pull database updates from Google Sheets backend on boot
   syncData: async () => {
-    const gasUrl = localStorage.getItem('evm_gas_url');
+    const gasUrl = getGasUrl();
     if (!gasUrl || gasUrl.includes('EVM_PROX_Deployment_ID')) {
       console.log('Google Sheets sync not configured. Operating in local-only storage mode.');
       return { success: false, error: 'Not Configured' };
