@@ -40,6 +40,10 @@ function doGet(e) {
   try {
     const action = e.parameter.action;
     
+    if (action === "version") {
+      return handleResponse({ success: true, version: "1.0.1-no-getcell" });
+    }
+    
     if (action === "readAll") {
       const dbData = {};
       const ss = SpreadsheetApp.getActiveSpreadsheet();
