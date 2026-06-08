@@ -6,7 +6,7 @@ const Settings = () => {
   const { user } = useAuth();
   
   // Settings values
-  const DEFAULT_GAS_URL = import.meta.env.VITE_GAS_URL || 'https://script.google.com/macros/s/AKfycbzilQgn7d-b-AJIqCLw2UZpjwUxd4OLg72K-FWAUz84eugqtup8T5bvbObocMu9S3vq/exec';
+  const DEFAULT_GAS_URL = import.meta.env.VITE_GAS_URL || 'https://script.google.com/macros/s/AKfycbxXDXbcaR029LtXnMogkBGlCPC2AgZ-BJITYAw0qHUkdPEpVCmPUuw8RtZ_L9o8vR9C/exec';
   const DEFAULT_SHEET_ID = import.meta.env.VITE_SHEET_ID || '1jAR0JQr8lnKc_UjaaiM-Oc_JBxF6H0JQsZXWQMMI75M';
 
   const [gasUrl, setGasUrl] = useState(() => localStorage.getItem('evm_gas_url') || DEFAULT_GAS_URL);
