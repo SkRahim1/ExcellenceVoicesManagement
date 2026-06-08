@@ -216,14 +216,14 @@ function updateRowInSheet(sheet, idKey, idValue, updateObj) {
   for (let c = 0; c < headers.length; c++) {
     const key = headers[c];
     if (updateObj[key] !== undefined && key !== idKey) {
-      sheet.getCell(targetRowIndex, c + 1).setValue(updateObj[key]);
+      sheet.getRange(targetRowIndex, c + 1).setValue(updateObj[key]);
     }
   }
   
   // Update timestamp if present
   const updatedColIndex = headers.indexOf("updated_date");
   if (updatedColIndex !== -1) {
-    sheet.getCell(targetRowIndex, updatedColIndex + 1).setValue(new Date().toISOString());
+    sheet.getRange(targetRowIndex, updatedColIndex + 1).setValue(new Date().toISOString());
   }
   
   // Return the updated row
