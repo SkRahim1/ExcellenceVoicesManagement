@@ -142,8 +142,8 @@ The portal secures your business calculations through a strict access control la
 | :--- | :--- | :--- |
 | **Partner 1** | Read & Write | Add/Modify Schools, Payments, Payouts, Expenses, and Settings (requires passcode) |
 | **Manager** (You) | Read & Write | Add/Modify Schools, Payments, Payouts, Expenses, and Settings (requires passcode) |
-| **Partner 2** | Read-Only | View Dashboard, Reports Hub, and Activity Logs. All edit forms are hidden. |
-| **Partner 3** | Read-Only | View Dashboard, Reports Hub, and Activity Logs. All edit forms are hidden. |
+| **Partner 2** | Read & Write | Add/Modify Schools, Payments, Payouts, Expenses, and Settings (requires passcode) |
+| **Partner 3** | Read & Write | Add/Modify Schools, Payments, Payouts, Expenses, and Settings (requires passcode) |
 
 ### Technical Security Information
 * **Public GitHub Repository**: The website code is hosted publicly on GitHub to enable free pages hosting. **This is completely secure.** No database passwords, spreadsheet keys, or client credentials are saved in the GitHub code repository.

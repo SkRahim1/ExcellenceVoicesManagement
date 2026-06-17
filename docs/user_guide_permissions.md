@@ -30,22 +30,22 @@ The user base is capped at **4 specific users** mapped to **4 roles**.
 | :--- | :--- | :--- | :--- | :--- |
 | **View Dashboard** | Yes | Yes | Yes | Yes |
 | **View Reports** | Yes | Yes | Yes | Yes |
-| **Add / Edit Schools** | Yes | Yes | No | No |
-| **Add School Payments** | Yes | Yes | No | No |
-| **Add / Edit Trainers** | Yes | Yes | No | No |
-| **Add Trainer Payments**| Yes | Yes | No | No |
-| **Add / Edit Expenses** | Yes | Yes | No | No |
-| **Add Contributions** | Yes | Yes | No | No |
-| **Trigger Reminders** | Yes | Yes | No | No |
+| **Add / Edit Schools** | Yes | Yes | Yes | Yes |
+| **Add School Payments** | Yes | Yes | Yes | Yes |
+| **Add / Edit Trainers** | Yes | Yes | Yes | Yes |
+| **Add Trainer Payments**| Yes | Yes | Yes | Yes |
+| **Add / Edit Expenses** | Yes | Yes | Yes | Yes |
+| **Add Contributions** | Yes | Yes | Yes | Yes |
+| **Trigger Reminders** | Yes | Yes | Yes | Yes |
 | **View Activity Logs** | Yes | Yes | Yes | Yes |
 
-### Edit Access (Partner 1 & Manager)
+### Edit Access (All Roles: Partner 1, Manager, Partner 2, Partner 3)
 * Full read/write control.
 * Can create records, update fields, delete items, and process financial inputs.
-* Responsible for administrative functions.
+* Responsible for administrative and collaborative functions.
 
-### View-Only Access (Partner 2 & Partner 3)
-* Read-only.
+### View-Only Access (Fallback Roles)
+* Users who are not mapped to the specific partner/manager email addresses default to Read-Only access.
 * Buttons such as "Add New School", "Record Payment", or "Send Reminder" are hidden, disabled, or prompt an access-denied error.
 * Can view pages, filters, reports, and search fields.
 

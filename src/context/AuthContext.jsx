@@ -103,8 +103,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Helper check: Only Partner 1 and Manager have Edit capabilities.
-  const hasEditPermission = user ? (user.role === 'Partner 1' || user.role === 'Manager') : false;
+  // Helper check: Partner 1, Manager, Partner 2, and Partner 3 have Edit capabilities.
+  const hasEditPermission = user ? (
+    user.role === 'Partner 1' || 
+    user.role === 'Manager' || 
+    user.role === 'Partner 2' || 
+    user.role === 'Partner 3'
+  ) : false;
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, hasEditPermission }}>
