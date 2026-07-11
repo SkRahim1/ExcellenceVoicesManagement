@@ -183,7 +183,19 @@ export const mockDb = {
   getTrainerPayments: () => getDb().trainerPayments,
   getExpenses: () => getDb().expenses,
   getContributions: () => getDb().contributions,
-  getLogs: () => getDb().logs,
+  getLogs: () => {
+    const logs = getDb().logs || [];
+    return [...logs].sort((a, b) => {
+      const aTime = a.log_id.startsWith('log_') && !isNaN(a.log_id.slice(4)) ? Number(a.log_id.slice(4)) : 0;
+      const bTime = b.log_id.startsWith('log_') && !isNaN(b.log_id.slice(4)) ? Number(b.log_id.slice(4)) : 0;
+      if (aTime && bTime) {
+        return bTime - aTime;
+      }
+      const aDateTime = `${a.date}T${a.time}`;
+      const bDateTime = `${b.date}T${b.time}`;
+      return bDateTime.localeCompare(aDateTime);
+    });
+  },
 
   // Create Operations with replication
   addSchool: (schoolData) => {
@@ -407,6 +419,35 @@ export const mockDb = {
     syncPost('addRow', 'logs', newLog);
 
     return newExpense;
+  },
+
+  deleteExpense: (expenseId) => {
+    const db = getDb();
+    const index = db.expenses.findIndex(e => e.expense_id === expenseId);
+    if (index !== -1) {
+      const deletedExpense = db.expenses[index];
+      db.expenses.splice(index, 1);
+
+      // Log action
+      const newLog = {
+        log_id: `log_${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().split(' ')[0],
+        user: getActiveUserEmail(),
+        action: 'Expense Deleted',
+        description: `Deleted expense of $${deletedExpense.amount} under category ${deletedExpense.category}`
+      };
+      db.logs.unshift(newLog);
+
+      saveDb(db);
+
+      // Async sync to Google Sheets
+      syncPost('archiveRow', 'expenses', null, 'expense_id', expenseId);
+      syncPost('addRow', 'logs', newLog);
+
+      return true;
+    }
+    throw new Error('Expense not found');
   },
 
   addContribution: (contributionData) => {

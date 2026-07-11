@@ -72,6 +72,27 @@ const Expenses = () => {
     loadData();
   };
 
+  const handleDeleteExpense = (expenseId) => {
+    if (!hasEditPermission) return;
+    const exp = expenses.find(e => e.expense_id === expenseId);
+    if (!exp) return;
+
+    if (window.confirm(`Are you sure you want to delete the expense of ${formatCurrency(exp.amount)} under "${exp.category}"? It will be archived on Google Sheets and recorded in system logs.`)) {
+      try {
+        mockDb.deleteExpense(expenseId);
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'success', message: `Expense of ${formatCurrency(exp.amount)} under "${exp.category}" deleted and archived successfully.` }
+        }));
+        loadData();
+      } catch (err) {
+        console.error('Failed to delete expense:', err);
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'error', message: `Failed to delete expense: ${err.message}` }
+        }));
+      }
+    }
+  };
+
   return (
     <>
       <div className="page-header">
@@ -138,7 +159,7 @@ const Expenses = () => {
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>Date</th><th>Category</th><th>Amount</th><th>Remarks</th><th>Logged By</th>
+                        <th>Date</th><th>Category</th><th>Amount</th><th>Remarks</th><th>Logged By</th>{hasEditPermission && <th style={{ textAlign: 'center' }}>Actions</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -149,6 +170,23 @@ const Expenses = () => {
                           <td style={{ fontWeight: 600 }}>{formatCurrency(exp.amount)}</td>
                           <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{exp.remarks}</td>
                           <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{exp.added_by}</td>
+                          {hasEditPermission && (
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                onClick={() => handleDeleteExpense(exp.expense_id)}
+                                className="btn btn-secondary btn-small"
+                                style={{
+                                  borderColor: 'var(--color-pink)',
+                                  color: 'var(--color-pink)',
+                                  padding: '4px 8px',
+                                  fontSize: '0.75rem',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -178,6 +216,23 @@ const Expenses = () => {
                           <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
                             <span className="mobile-card-label">Remarks</span>
                             <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{exp.remarks}</span>
+                          </div>
+                        )}
+                        {hasEditPermission && (
+                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                            <button
+                              onClick={() => handleDeleteExpense(exp.expense_id)}
+                              className="btn btn-secondary btn-small"
+                              style={{
+                                borderColor: 'var(--color-pink)',
+                                color: 'var(--color-pink)',
+                                padding: '4px 10px',
+                                fontSize: '0.8rem',
+                                borderRadius: '6px'
+                              }}
+                            >
+                              Delete Expense
+                            </button>
                           </div>
                         )}
                       </div>

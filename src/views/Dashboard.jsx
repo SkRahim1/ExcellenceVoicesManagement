@@ -201,25 +201,31 @@ const Dashboard = () => {
     }
 
     if (activeDetail === 'revenue') {
-      const sorted = [...schoolsWithStats].sort((a, b) => b.schoolPaid - a.schoolPaid);
+      const sorted = [...schoolsWithStats].sort((a, b) => {
+        const totalA = a.schoolPaid + Number(a.advance_for_books || 0);
+        const totalB = b.schoolPaid + Number(b.advance_for_books || 0);
+        return totalB - totalA;
+      });
       return (
         <div>
           {hdr('Revenue Received — School-wise Breakdown', 'var(--color-green)')}
           {schoolTable(
-            ['School Name', 'Contract Value', 'Payments Received', 'Balance Remaining'],
-            sorted.map(s => (
-              <tr key={s.school_id}>
-                <td style={{ fontWeight: 600 }}>{s.school_name}</td>
-                <td>{formatCurrency(s.contract_amount)}</td>
-                <td style={{ color: 'var(--color-green)', fontWeight: 700 }}>{formatCurrency(s.schoolPaid)}</td>
-                <td style={{ color: s.balance > 0 ? 'var(--color-pink)' : 'var(--color-green)', fontWeight: 600 }}>
-                  {formatCurrency(s.balance)}
-                </td>
-              </tr>
-            ))
+            ['School Name', 'Payments Received', 'Book Advance', 'Total Received'],
+            sorted.map(s => {
+              const bookAdv = Number(s.advance_for_books || 0);
+              const totalSchRev = s.schoolPaid + bookAdv;
+              return (
+                <tr key={s.school_id}>
+                  <td style={{ fontWeight: 600 }}>{s.school_name}</td>
+                  <td>{formatCurrency(s.schoolPaid)}</td>
+                  <td style={{ color: 'var(--color-violet)' }}>{formatCurrency(bookAdv)}</td>
+                  <td style={{ color: 'var(--color-green)', fontWeight: 700 }}>{formatCurrency(totalSchRev)}</td>
+                </tr>
+              );
+            })
           )}
           <div style={{ marginTop: '0.75rem', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-muted)', borderTop: '1px solid var(--card-border)', paddingTop: '0.6rem' }}>
-            Total Received: <strong style={{ color: 'var(--color-green)' }}>{formatCurrency(revenueReceived)}</strong>
+            Total Received: <strong style={{ color: 'var(--color-green)' }}>{formatCurrency(revenueReceived + totalAdvanceForBooks)}</strong>
           </div>
         </div>
       );
@@ -498,9 +504,9 @@ const Dashboard = () => {
         >
           <div className="metric-header">Revenue Received</div>
           <div className="metric-value" style={{ color: 'var(--color-green)' }}>
-            {formatCurrency(revenueReceived)}
+            {formatCurrency(revenueReceived + totalAdvanceForBooks)}
           </div>
-          <div className="metric-footer">Total school payments logged</div>
+          <div className="metric-footer">Payments + Book Advances</div>
           <div className="tap-hint">tap to expand ↓</div>
         </div>
 

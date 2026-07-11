@@ -75,7 +75,7 @@ const Reports = () => {
                 <thead>
                   <tr>
                     <th>School Name</th>
-                    <th>Assigned Trainer</th>
+                    <th>Book Advance</th>
                     <th>Contract Value</th>
                     <th>Payments Received</th>
                     <th>Remaining Balance</th>
@@ -90,7 +90,7 @@ const Reports = () => {
                     return (
                       <tr key={school.school_id}>
                         <td style={{ fontWeight: 600 }}>{school.school_name}</td>
-                        <td>{getTrainerName(school.trainer_id)}</td>
+                        <td>{formatCurrency(school.advance_for_books)}</td>
                         <td>{formatCurrency(school.contract_amount)}</td>
                         <td style={{ color: 'var(--color-green)' }}>{formatCurrency(schoolPaid)}</td>
                         <td style={{ color: balance > 0 ? 'var(--color-pink)' : 'var(--color-green)', fontWeight: 600 }}>
