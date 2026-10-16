@@ -37,7 +37,11 @@ const Trainers = () => {
     setPayouts(mockDb.getTrainerPayments());
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
+  }, []);
 
   const formatCurrency = (val) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
@@ -66,6 +70,31 @@ const Trainers = () => {
     loadData();
     const current = mockDb.getTrainers().find(t => t.trainer_id === selectedTrainer.trainer_id);
     setSelectedTrainer(current);
+  };
+
+  const handleDeletePayout = (payoutId) => {
+    if (!hasEditPermission) return;
+    const po = payouts.find(p => p.payout_id === payoutId);
+    if (!po) return;
+
+    if (window.confirm(`Are you sure you want to delete the payout of ${formatCurrency(po.amount)} for month "${po.month}"? It will be archived on Google Sheets and recorded in system logs.`)) {
+      try {
+        mockDb.deleteTrainerPayment(payoutId);
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'success', message: `Payout of ${formatCurrency(po.amount)} for "${po.month}" deleted and archived successfully.` }
+        }));
+        loadData();
+        if (selectedTrainer) {
+          const current = mockDb.getTrainers().find(t => t.trainer_id === selectedTrainer.trainer_id);
+          setSelectedTrainer(current);
+        }
+      } catch (err) {
+        console.error('Failed to delete payout:', err);
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'error', message: `Failed to delete payout: ${err.message}` }
+        }));
+      }
+    }
   };
 
   // ── Trainer Detail Panel ──────────────────────────────────────────────────
@@ -142,7 +171,15 @@ const Trainers = () => {
               <div className="desktop-only">
                 <div className="table-container">
                   <table className="data-table" style={{ fontSize: '0.85rem' }}>
-                    <thead><tr><th>Date</th><th>Month</th><th>Amount</th><th>Remarks</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Month</th>
+                        <th>Amount</th>
+                        <th>Remarks</th>
+                        {hasEditPermission && <th style={{ textAlign: 'center' }}>Action</th>}
+                      </tr>
+                    </thead>
                     <tbody>
                       {trainerPayouts.map(po => (
                         <tr key={po.payout_id}>
@@ -150,6 +187,23 @@ const Trainers = () => {
                           <td>{po.month}</td>
                           <td style={{ color: 'var(--color-violet)', fontWeight: 600 }}>{formatCurrency(po.amount)}</td>
                           <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{po.remarks}</td>
+                          {hasEditPermission && (
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                onClick={() => handleDeletePayout(po.payout_id)}
+                                className="btn btn-secondary btn-small"
+                                style={{
+                                  borderColor: 'var(--color-pink)',
+                                  color: 'var(--color-pink)',
+                                  padding: '4px 8px',
+                                  fontSize: '0.75rem',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -175,6 +229,23 @@ const Trainers = () => {
                           <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
                             <span className="mobile-card-label">Remarks</span>
                             <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{po.remarks}</span>
+                          </div>
+                        )}
+                        {hasEditPermission && (
+                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                            <button
+                              onClick={() => handleDeletePayout(po.payout_id)}
+                              className="btn btn-secondary btn-small"
+                              style={{
+                                borderColor: 'var(--color-pink)',
+                                color: 'var(--color-pink)',
+                                padding: '4px 10px',
+                                fontSize: '0.8rem',
+                                borderRadius: '6px'
+                              }}
+                            >
+                              Delete Payout
+                            </button>
                           </div>
                         )}
                       </div>

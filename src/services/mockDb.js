@@ -73,6 +73,7 @@ const getDb = () => {
 
 const saveDb = (db) => {
   localStorage.setItem('evm_db', JSON.stringify(db));
+  window.dispatchEvent(new Event('evm_db_updated'));
 };
 
 // Retrieve active session user email
@@ -329,6 +330,38 @@ export const mockDb = {
     throw new Error('Payment not found');
   },
 
+  deletePayment: (paymentId) => {
+    const db = getDb();
+    const index = db.payments.findIndex(p => p.payment_id === paymentId);
+    if (index !== -1) {
+      const deletedPayment = db.payments[index];
+      const school = db.schools.find(s => s.school_id === deletedPayment.school_id);
+      const schoolName = school ? school.school_name : 'Unknown';
+
+      db.payments.splice(index, 1);
+
+      // Log action
+      const newLog = {
+        log_id: `log_${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().split(' ')[0],
+        user: getActiveUserEmail(),
+        action: 'Payment Deleted',
+        description: `Deleted school payment of ₹${deletedPayment.amount} for ${schoolName} (Month: ${deletedPayment.month || 'N/A'})`
+      };
+      db.logs.unshift(newLog);
+
+      saveDb(db);
+
+      // Async sync to Google Sheets
+      syncPost('archiveRow', 'payments', null, 'payment_id', paymentId);
+      syncPost('addRow', 'logs', newLog);
+
+      return true;
+    }
+    throw new Error('Payment not found');
+  },
+
   addTrainer: (trainerData) => {
     const db = getDb();
     const newTrainer = {
@@ -389,6 +422,38 @@ export const mockDb = {
     syncPost('addRow', 'logs', newLog);
 
     return newPayout;
+  },
+
+  deleteTrainerPayment: (payoutId) => {
+    const db = getDb();
+    const index = db.trainerPayments.findIndex(p => p.payout_id === payoutId);
+    if (index !== -1) {
+      const deletedPayout = db.trainerPayments[index];
+      const trainer = db.trainers.find(t => t.trainer_id === deletedPayout.trainer_id);
+      const trainerName = trainer ? trainer.trainer_name : 'Unknown';
+
+      db.trainerPayments.splice(index, 1);
+
+      // Log action
+      const newLog = {
+        log_id: `log_${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().split(' ')[0],
+        user: getActiveUserEmail(),
+        action: 'Trainer Payout Deleted',
+        description: `Deleted trainer payout of ₹${deletedPayout.amount} for ${trainerName} (Month: ${deletedPayout.month || 'N/A'})`
+      };
+      db.logs.unshift(newLog);
+
+      saveDb(db);
+
+      // Async sync to Google Sheets
+      syncPost('archiveRow', 'trainerPayments', null, 'payout_id', payoutId);
+      syncPost('addRow', 'logs', newLog);
+
+      return true;
+    }
+    throw new Error('Trainer payout not found');
   },
 
   addExpense: (expenseData) => {

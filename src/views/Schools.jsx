@@ -63,7 +63,11 @@ const Schools = () => {
     setTrainers(mockDb.getTrainers());
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    window.addEventListener('evm_db_updated', loadData);
+    return () => window.removeEventListener('evm_db_updated', loadData);
+  }, []);
 
   const formatCurrency = (val) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
@@ -136,6 +140,31 @@ const Schools = () => {
     loadData();
     const current = mockDb.getSchools().find(s => s.school_id === selectedSchool.school_id);
     setSelectedSchool(current);
+  };
+
+  const handleDeletePayment = (paymentId) => {
+    if (!hasEditPermission) return;
+    const pay = payments.find(p => p.payment_id === paymentId);
+    if (!pay) return;
+
+    if (window.confirm(`Are you sure you want to delete the payment of ${formatCurrency(pay.amount)} for month "${pay.month}"? It will be archived on Google Sheets and recorded in system logs.`)) {
+      try {
+        mockDb.deletePayment(paymentId);
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'success', message: `Payment of ${formatCurrency(pay.amount)} for "${pay.month}" deleted and archived successfully.` }
+        }));
+        loadData();
+        if (selectedSchool) {
+          const current = mockDb.getSchools().find(s => s.school_id === selectedSchool.school_id);
+          setSelectedSchool(current);
+        }
+      } catch (err) {
+        console.error('Failed to delete payment:', err);
+        window.dispatchEvent(new CustomEvent('evm_toast', {
+          detail: { type: 'error', message: `Failed to delete payment: ${err.message}` }
+        }));
+      }
+    }
   };
 
   // Shared form grid style (auto-fits to 1 col on mobile)
@@ -264,7 +293,13 @@ const Schools = () => {
                 <div className="table-container">
                   <table className="data-table" style={{ fontSize: '0.85rem' }}>
                     <thead>
-                      <tr><th>Date</th><th>Cover Month</th><th>Amount</th><th>Remarks</th></tr>
+                      <tr>
+                        <th>Date</th>
+                        <th>Cover Month</th>
+                        <th>Amount</th>
+                        <th>Remarks</th>
+                        {hasEditPermission && <th style={{ textAlign: 'center' }}>Action</th>}
+                      </tr>
                     </thead>
                     <tbody>
                       {schoolPayments.map(pay => (
@@ -273,6 +308,23 @@ const Schools = () => {
                           <td>{pay.month}</td>
                           <td style={{ color: 'var(--color-green)', fontWeight: 600 }}>{formatCurrency(pay.amount)}</td>
                           <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{pay.remarks}</td>
+                          {hasEditPermission && (
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                onClick={() => handleDeletePayment(pay.payment_id)}
+                                className="btn btn-secondary btn-small"
+                                style={{
+                                  borderColor: 'var(--color-pink)',
+                                  color: 'var(--color-pink)',
+                                  padding: '4px 8px',
+                                  fontSize: '0.75rem',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -298,6 +350,23 @@ const Schools = () => {
                           <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
                             <span className="mobile-card-label">Remarks</span>
                             <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{pay.remarks}</span>
+                          </div>
+                        )}
+                        {hasEditPermission && (
+                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                            <button
+                              onClick={() => handleDeletePayment(pay.payment_id)}
+                              className="btn btn-secondary btn-small"
+                              style={{
+                                borderColor: 'var(--color-pink)',
+                                color: 'var(--color-pink)',
+                                padding: '4px 10px',
+                                fontSize: '0.8rem',
+                                borderRadius: '6px'
+                              }}
+                            >
+                              Delete Payment
+                            </button>
                           </div>
                         )}
                       </div>

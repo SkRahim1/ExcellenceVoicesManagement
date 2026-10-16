@@ -41,12 +41,12 @@ As a **Manager**, you have full access to view, add, and modify school records.
 4. Input the **Billing Month** (e.g. *2026-05*), **Amount**, **Payment Date**, and any **Remarks** (e.g., *1st Installment*).
 5. Click **Save Payment**. The system will log the payment, adjust the remaining balance, and sync the transaction to the sheet.
 
-### Modifying past payments
-If you make a data-entry mistake while logging a payment:
-1. Open the school details card and scroll down to the payments list.
-2. Locate the row containing the mistake and click the blue **Edit** button.
-3. An inline form will open. Correct the Billing Month, Amount, Date, or Remarks.
-4. Click **Save Changes**. The transaction will update, recalculate financial totals, and push the update to your Google Sheet automatically.
+### Modifying or Deleting Payments
+If you make a data-entry mistake or wrongly add a payment:
+1. Open the school details card and scroll down to the **Payment Transactions** list.
+2. Locate the row containing the payment record.
+3. Click the pink **Delete** button next to the payment.
+4. Confirm the prompt (`Are you sure you want to delete the payment...`). The payment will be removed, balances recalculated immediately, the transaction archived safely to the Google Sheet (`Archive_payments`), and recorded in system audit logs.
 
 ---
 
@@ -56,6 +56,7 @@ If you make a data-entry mistake while logging a payment:
 1. Go to the **Trainers** page.
 2. Click **+ Add Trainer** to register a new trainer profile.
 3. To payout a trainer, select them from the list, click **+ Record Payout**, enter the billing month and payout amount, and save.
+4. If an incorrect payout was recorded, click the **Delete** button in the trainer's payout table to remove and archive it.
 
 ### Logging Business Expenses
 1. Go to the **Expenses** page.
