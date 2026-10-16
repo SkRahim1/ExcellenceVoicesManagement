@@ -44,9 +44,10 @@ As a **Manager**, you have full access to view, add, and modify school records.
 ### Modifying or Deleting Payments
 If you make a data-entry mistake or wrongly add a payment:
 1. Open the school details card and scroll down to the **Payment Transactions** list.
-2. Locate the row containing the payment record.
+2. Locate the most recently added payment record (for audit and ledger integrity, **only the latest payment** can be deleted).
 3. Click the pink **Delete** button next to the payment.
-4. Confirm the prompt (`Are you sure you want to delete the payment...`). The payment will be removed, balances recalculated immediately, the transaction archived safely to the Google Sheet (`Archive_payments`), and recorded in system audit logs.
+4. Enter a mandatory **Reason for Deletion** when prompted (e.g. *Duplicate entry added by mistake*).
+5. Confirm the deletion prompt. The payment will be removed, balances will recalculate immediately, the reason and deletion event will be recorded in the system audit logs, and the entry will be archived safely to `Archive_payments` in Google Sheets.
 
 ---
 
@@ -56,7 +57,7 @@ If you make a data-entry mistake or wrongly add a payment:
 1. Go to the **Trainers** page.
 2. Click **+ Add Trainer** to register a new trainer profile.
 3. To payout a trainer, select them from the list, click **+ Record Payout**, enter the billing month and payout amount, and save.
-4. If an incorrect payout was recorded, click the **Delete** button in the trainer's payout table to remove and archive it.
+4. If an incorrect payout was recorded, click the **Delete** button on the latest payout record, provide a deletion reason, and confirm to remove and archive it.
 
 ### Logging Business Expenses
 1. Go to the **Expenses** page.

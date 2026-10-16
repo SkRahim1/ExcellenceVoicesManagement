@@ -142,14 +142,45 @@ const Schools = () => {
     setSelectedSchool(current);
   };
 
+  const getLastPaymentId = (paymentList) => {
+    if (!paymentList || paymentList.length === 0) return null;
+    const sorted = [...paymentList].sort((a, b) => {
+      const timeA = new Date(a.created_at || a.payment_date || 0).getTime();
+      const timeB = new Date(b.created_at || b.payment_date || 0).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return String(a.payment_id).localeCompare(String(b.payment_id));
+    });
+    return sorted[sorted.length - 1].payment_id;
+  };
+
   const handleDeletePayment = (paymentId) => {
     if (!hasEditPermission) return;
     const pay = payments.find(p => p.payment_id === paymentId);
     if (!pay) return;
 
-    if (window.confirm(`Are you sure you want to delete the payment of ${formatCurrency(pay.amount)} for month "${pay.month}"? It will be archived on Google Sheets and recorded in system logs.`)) {
+    // Verify this is the latest payment for this school
+    const schoolPayments = payments.filter(p => p.school_id === pay.school_id);
+    const lastPaymentId = getLastPaymentId(schoolPayments);
+    if (paymentId !== lastPaymentId) {
+      alert('Only the most recent payment for this school can be deleted.');
+      return;
+    }
+
+    const reason = window.prompt(
+      `Please provide the reason for deleting this payment of ${formatCurrency(pay.amount)} for "${pay.month}":\n\n(This reason is mandatory and will be recorded in the system audit trail)`
+    );
+
+    if (reason === null) return; // User cancelled prompt
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      alert('Deletion cancelled: You must enter a reason to delete this payment.');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to permanently delete this payment?\n\nSchool: ${selectedSchool?.school_name}\nAmount: ${formatCurrency(pay.amount)}\nMonth: ${pay.month}\nReason: "${trimmedReason}"\n\nIt will be archived on Google Sheets and recorded in system audit logs.`)) {
       try {
-        mockDb.deletePayment(paymentId);
+        mockDb.deletePayment(paymentId, trimmedReason);
         window.dispatchEvent(new CustomEvent('evm_toast', {
           detail: { type: 'success', message: `Payment of ${formatCurrency(pay.amount)} for "${pay.month}" deleted and archived successfully.` }
         }));
@@ -174,6 +205,7 @@ const Schools = () => {
   const renderDetail = () => {
     if (!selectedSchool) return null;
     const schoolPayments = payments.filter(p => p.school_id === selectedSchool.school_id);
+    const lastPaymentId = getLastPaymentId(schoolPayments);
     return (
       <div className="glass-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -302,76 +334,95 @@ const Schools = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {schoolPayments.map(pay => (
-                        <tr key={pay.payment_id}>
-                          <td>{pay.payment_date}</td>
-                          <td>{pay.month}</td>
-                          <td style={{ color: 'var(--color-green)', fontWeight: 600 }}>{formatCurrency(pay.amount)}</td>
-                          <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{pay.remarks}</td>
-                          {hasEditPermission && (
-                            <td style={{ textAlign: 'center' }}>
-                              <button
-                                onClick={() => handleDeletePayment(pay.payment_id)}
-                                className="btn btn-secondary btn-small"
-                                style={{
-                                  borderColor: 'var(--color-pink)',
-                                  color: 'var(--color-pink)',
-                                  padding: '4px 8px',
-                                  fontSize: '0.75rem',
-                                  borderRadius: '6px'
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
+                      {schoolPayments.map(pay => {
+                        const isLast = pay.payment_id === lastPaymentId;
+                        return (
+                          <tr key={pay.payment_id}>
+                            <td>{pay.payment_date}</td>
+                            <td>{pay.month}</td>
+                            <td style={{ color: 'var(--color-green)', fontWeight: 600 }}>{formatCurrency(pay.amount)}</td>
+                            <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{pay.remarks}</td>
+                            {hasEditPermission && (
+                              <td style={{ textAlign: 'center' }}>
+                                {isLast ? (
+                                  <button
+                                    onClick={() => handleDeletePayment(pay.payment_id)}
+                                    className="btn btn-secondary btn-small"
+                                    title="Delete last logged payment"
+                                    style={{
+                                      borderColor: 'var(--color-pink)',
+                                      color: 'var(--color-pink)',
+                                      padding: '4px 8px',
+                                      fontSize: '0.75rem',
+                                      borderRadius: '6px'
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} title="Only the most recent payment can be deleted">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                  * For audit and accounting safety, only the most recently logged payment can be deleted.
                 </div>
               </div>
 
               {/* Mobile payment cards */}
               <div className="mobile-only">
                 <div className="mobile-card-list">
-                  {schoolPayments.map(pay => (
-                    <div className="mobile-card" key={pay.payment_id}>
-                      <div className="mobile-card-header">
-                        <span className="mobile-card-title">{pay.month}</span>
-                        <span style={{ color: 'var(--color-green)', fontWeight: 700, fontSize: '1rem' }}>{formatCurrency(pay.amount)}</span>
-                      </div>
-                      <div className="mobile-card-grid">
-                        <div className="mobile-card-item">
-                          <span className="mobile-card-label">Date</span>
-                          <span className="mobile-card-value">{pay.payment_date}</span>
+                  {schoolPayments.map(pay => {
+                    const isLast = pay.payment_id === lastPaymentId;
+                    return (
+                      <div className="mobile-card" key={pay.payment_id}>
+                        <div className="mobile-card-header">
+                          <span className="mobile-card-title">{pay.month}</span>
+                          <span style={{ color: 'var(--color-green)', fontWeight: 700, fontSize: '1rem' }}>{formatCurrency(pay.amount)}</span>
                         </div>
-                        {pay.remarks && (
-                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
-                            <span className="mobile-card-label">Remarks</span>
-                            <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{pay.remarks}</span>
+                        <div className="mobile-card-grid">
+                          <div className="mobile-card-item">
+                            <span className="mobile-card-label">Date</span>
+                            <span className="mobile-card-value">{pay.payment_date}</span>
                           </div>
-                        )}
-                        {hasEditPermission && (
-                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                            <button
-                              onClick={() => handleDeletePayment(pay.payment_id)}
-                              className="btn btn-secondary btn-small"
-                              style={{
-                                borderColor: 'var(--color-pink)',
-                                color: 'var(--color-pink)',
-                                padding: '4px 10px',
-                                fontSize: '0.8rem',
-                                borderRadius: '6px'
-                              }}
-                            >
-                              Delete Payment
-                            </button>
-                          </div>
-                        )}
+                          {pay.remarks && (
+                            <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
+                              <span className="mobile-card-label">Remarks</span>
+                              <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{pay.remarks}</span>
+                            </div>
+                          )}
+                          {hasEditPermission && isLast && (
+                            <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                              <button
+                                onClick={() => handleDeletePayment(pay.payment_id)}
+                                className="btn btn-secondary btn-small"
+                                style={{
+                                  borderColor: 'var(--color-pink)',
+                                  color: 'var(--color-pink)',
+                                  padding: '4px 10px',
+                                  fontSize: '0.8rem',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Delete Last Payment
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', textAlign: 'center' }}>
+                  * Only the most recently logged payment can be deleted.
                 </div>
               </div>
             </>

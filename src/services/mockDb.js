@@ -330,7 +330,7 @@ export const mockDb = {
     throw new Error('Payment not found');
   },
 
-  deletePayment: (paymentId) => {
+  deletePayment: (paymentId, reason = '') => {
     const db = getDb();
     const index = db.payments.findIndex(p => p.payment_id === paymentId);
     if (index !== -1) {
@@ -338,16 +338,30 @@ export const mockDb = {
       const school = db.schools.find(s => s.school_id === deletedPayment.school_id);
       const schoolName = school ? school.school_name : 'Unknown';
 
+      // Enforce that only the most recent payment for this school can be deleted
+      const schoolPayments = db.payments.filter(p => p.school_id === deletedPayment.school_id);
+      const sorted = [...schoolPayments].sort((a, b) => {
+        const timeA = new Date(a.created_at || a.payment_date || 0).getTime();
+        const timeB = new Date(b.created_at || b.payment_date || 0).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+        return String(a.payment_id).localeCompare(String(b.payment_id));
+      });
+      const lastPayment = sorted[sorted.length - 1];
+      if (lastPayment && lastPayment.payment_id !== paymentId) {
+        throw new Error('Only the most recent payment for this school can be deleted.');
+      }
+
       db.payments.splice(index, 1);
 
-      // Log action
+      // Log action with mandatory reason
+      const reasonSuffix = reason ? ` | Reason: ${reason}` : '';
       const newLog = {
         log_id: `log_${Date.now()}`,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().split(' ')[0],
         user: getActiveUserEmail(),
         action: 'Payment Deleted',
-        description: `Deleted school payment of ₹${deletedPayment.amount} for ${schoolName} (Month: ${deletedPayment.month || 'N/A'})`
+        description: `Deleted school payment of ₹${deletedPayment.amount} for ${schoolName} (Month: ${deletedPayment.month || 'N/A'})${reasonSuffix}`
       };
       db.logs.unshift(newLog);
 
@@ -424,7 +438,7 @@ export const mockDb = {
     return newPayout;
   },
 
-  deleteTrainerPayment: (payoutId) => {
+  deleteTrainerPayment: (payoutId, reason = '') => {
     const db = getDb();
     const index = db.trainerPayments.findIndex(p => p.payout_id === payoutId);
     if (index !== -1) {
@@ -432,16 +446,30 @@ export const mockDb = {
       const trainer = db.trainers.find(t => t.trainer_id === deletedPayout.trainer_id);
       const trainerName = trainer ? trainer.trainer_name : 'Unknown';
 
+      // Enforce that only the most recent payout for this trainer can be deleted
+      const trainerPayouts = db.trainerPayments.filter(p => p.trainer_id === deletedPayout.trainer_id);
+      const sorted = [...trainerPayouts].sort((a, b) => {
+        const timeA = new Date(a.created_at || a.payment_date || 0).getTime();
+        const timeB = new Date(b.created_at || b.payment_date || 0).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+        return String(a.payout_id).localeCompare(String(b.payout_id));
+      });
+      const lastPayout = sorted[sorted.length - 1];
+      if (lastPayout && lastPayout.payout_id !== payoutId) {
+        throw new Error('Only the most recent payout for this trainer can be deleted.');
+      }
+
       db.trainerPayments.splice(index, 1);
 
-      // Log action
+      // Log action with mandatory reason
+      const reasonSuffix = reason ? ` | Reason: ${reason}` : '';
       const newLog = {
         log_id: `log_${Date.now()}`,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().split(' ')[0],
         user: getActiveUserEmail(),
         action: 'Trainer Payout Deleted',
-        description: `Deleted trainer payout of ₹${deletedPayout.amount} for ${trainerName} (Month: ${deletedPayout.month || 'N/A'})`
+        description: `Deleted trainer payout of ₹${deletedPayout.amount} for ${trainerName} (Month: ${deletedPayout.month || 'N/A'})${reasonSuffix}`
       };
       db.logs.unshift(newLog);
 

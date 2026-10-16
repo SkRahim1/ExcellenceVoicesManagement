@@ -72,14 +72,45 @@ const Trainers = () => {
     setSelectedTrainer(current);
   };
 
+  const getLastPayoutId = (payoutList) => {
+    if (!payoutList || payoutList.length === 0) return null;
+    const sorted = [...payoutList].sort((a, b) => {
+      const timeA = new Date(a.created_at || a.payment_date || 0).getTime();
+      const timeB = new Date(b.created_at || b.payment_date || 0).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return String(a.payout_id).localeCompare(String(b.payout_id));
+    });
+    return sorted[sorted.length - 1].payout_id;
+  };
+
   const handleDeletePayout = (payoutId) => {
     if (!hasEditPermission) return;
     const po = payouts.find(p => p.payout_id === payoutId);
     if (!po) return;
 
-    if (window.confirm(`Are you sure you want to delete the payout of ${formatCurrency(po.amount)} for month "${po.month}"? It will be archived on Google Sheets and recorded in system logs.`)) {
+    // Verify this is the latest payout for this trainer
+    const trainerPayouts = payouts.filter(p => p.trainer_id === po.trainer_id);
+    const lastPayoutId = getLastPayoutId(trainerPayouts);
+    if (payoutId !== lastPayoutId) {
+      alert('Only the most recent payout for this trainer can be deleted.');
+      return;
+    }
+
+    const reason = window.prompt(
+      `Please provide the reason for deleting this payout of ${formatCurrency(po.amount)} for "${po.month}":\n\n(This reason is mandatory and will be recorded in the system audit trail)`
+    );
+
+    if (reason === null) return; // User cancelled prompt
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      alert('Deletion cancelled: You must enter a reason to delete this payout.');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to permanently delete this payout?\n\nTrainer: ${selectedTrainer?.trainer_name}\nAmount: ${formatCurrency(po.amount)}\nMonth: ${po.month}\nReason: "${trimmedReason}"\n\nIt will be archived on Google Sheets and recorded in system audit logs.`)) {
       try {
-        mockDb.deleteTrainerPayment(payoutId);
+        mockDb.deleteTrainerPayment(payoutId, trimmedReason);
         window.dispatchEvent(new CustomEvent('evm_toast', {
           detail: { type: 'success', message: `Payout of ${formatCurrency(po.amount)} for "${po.month}" deleted and archived successfully.` }
         }));
@@ -101,6 +132,7 @@ const Trainers = () => {
   const renderDetail = () => {
     if (!selectedTrainer) return null;
     const trainerPayouts = payouts.filter(p => p.trainer_id === selectedTrainer.trainer_id);
+    const lastPayoutId = getLastPayoutId(trainerPayouts);
     const totalPaid = trainerPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
     return (
@@ -181,76 +213,95 @@ const Trainers = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {trainerPayouts.map(po => (
-                        <tr key={po.payout_id}>
-                          <td>{po.payment_date}</td>
-                          <td>{po.month}</td>
-                          <td style={{ color: 'var(--color-violet)', fontWeight: 600 }}>{formatCurrency(po.amount)}</td>
-                          <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{po.remarks}</td>
-                          {hasEditPermission && (
-                            <td style={{ textAlign: 'center' }}>
-                              <button
-                                onClick={() => handleDeletePayout(po.payout_id)}
-                                className="btn btn-secondary btn-small"
-                                style={{
-                                  borderColor: 'var(--color-pink)',
-                                  color: 'var(--color-pink)',
-                                  padding: '4px 8px',
-                                  fontSize: '0.75rem',
-                                  borderRadius: '6px'
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
+                      {trainerPayouts.map(po => {
+                        const isLast = po.payout_id === lastPayoutId;
+                        return (
+                          <tr key={po.payout_id}>
+                            <td>{po.payment_date}</td>
+                            <td>{po.month}</td>
+                            <td style={{ color: 'var(--color-violet)', fontWeight: 600 }}>{formatCurrency(po.amount)}</td>
+                            <td style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{po.remarks}</td>
+                            {hasEditPermission && (
+                              <td style={{ textAlign: 'center' }}>
+                                {isLast ? (
+                                  <button
+                                    onClick={() => handleDeletePayout(po.payout_id)}
+                                    className="btn btn-secondary btn-small"
+                                    title="Delete last logged payout"
+                                    style={{
+                                      borderColor: 'var(--color-pink)',
+                                      color: 'var(--color-pink)',
+                                      padding: '4px 8px',
+                                      fontSize: '0.75rem',
+                                      borderRadius: '6px'
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} title="Only the most recent payout can be deleted">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                  * For audit and accounting safety, only the most recently logged payout can be deleted.
                 </div>
               </div>
 
               {/* Mobile payout cards */}
               <div className="mobile-only">
                 <div className="mobile-card-list">
-                  {trainerPayouts.map(po => (
-                    <div className="mobile-card" key={po.payout_id}>
-                      <div className="mobile-card-header">
-                        <span className="mobile-card-title">{po.month}</span>
-                        <span style={{ color: 'var(--color-violet)', fontWeight: 700, fontSize: '1rem' }}>{formatCurrency(po.amount)}</span>
-                      </div>
-                      <div className="mobile-card-grid">
-                        <div className="mobile-card-item">
-                          <span className="mobile-card-label">Date</span>
-                          <span className="mobile-card-value">{po.payment_date}</span>
+                  {trainerPayouts.map(po => {
+                    const isLast = po.payout_id === lastPayoutId;
+                    return (
+                      <div className="mobile-card" key={po.payout_id}>
+                        <div className="mobile-card-header">
+                          <span className="mobile-card-title">{po.month}</span>
+                          <span style={{ color: 'var(--color-violet)', fontWeight: 700, fontSize: '1rem' }}>{formatCurrency(po.amount)}</span>
                         </div>
-                        {po.remarks && (
-                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
-                            <span className="mobile-card-label">Remarks</span>
-                            <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{po.remarks}</span>
+                        <div className="mobile-card-grid">
+                          <div className="mobile-card-item">
+                            <span className="mobile-card-label">Date</span>
+                            <span className="mobile-card-value">{po.payment_date}</span>
                           </div>
-                        )}
-                        {hasEditPermission && (
-                          <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                            <button
-                              onClick={() => handleDeletePayout(po.payout_id)}
-                              className="btn btn-secondary btn-small"
-                              style={{
-                                borderColor: 'var(--color-pink)',
-                                color: 'var(--color-pink)',
-                                padding: '4px 10px',
-                                fontSize: '0.8rem',
-                                borderRadius: '6px'
-                              }}
-                            >
-                              Delete Payout
-                            </button>
-                          </div>
-                        )}
+                          {po.remarks && (
+                            <div className="mobile-card-item" style={{ gridColumn: '1 / -1' }}>
+                              <span className="mobile-card-label">Remarks</span>
+                              <span className="mobile-card-value" style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{po.remarks}</span>
+                            </div>
+                          )}
+                          {hasEditPermission && isLast && (
+                            <div className="mobile-card-item" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                              <button
+                                onClick={() => handleDeletePayout(po.payout_id)}
+                                className="btn btn-secondary btn-small"
+                                style={{
+                                  borderColor: 'var(--color-pink)',
+                                  color: 'var(--color-pink)',
+                                  padding: '4px 10px',
+                                  fontSize: '0.8rem',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Delete Last Payout
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', textAlign: 'center' }}>
+                  * Only the most recently logged payout can be deleted.
                 </div>
               </div>
             </>
